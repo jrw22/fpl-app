@@ -117,4 +117,4 @@ if st.session_state.team_id and st.session_state.last_gameweek:
     st.pyplot(fig)
 
 else:
-    st.info("⚽ Enter your team ID and the most recent GW to get started!")
+    st.info("Enter your team ID and the most recent GW to get started!")
