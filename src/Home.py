@@ -11,7 +11,7 @@ st.title("FPL Analysis")
 
 # Initialise session state variables
 st.session_state.team_id = ""
-st.session_state.last_gameweek = ""
+st.session_state.last_gameweek = 0
 
 # Get data - user input
 st.session_state.team_id = st.text_input(label="Enter your team ID")
