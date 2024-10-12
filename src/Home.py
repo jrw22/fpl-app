@@ -14,9 +14,9 @@ st.session_state.team_id = ""
 st.session_state.last_gameweek = 0
 
 # Get data - user input
+st.session_state.last_gameweek = int(st.text_input(label="What was the most recent gameweek? e.g. 7", value="5"))
 st.session_state.team_id = st.text_input(label="Enter your team ID")
 st.markdown("Your team ID is the number found in the url on the Points page of the FPL website, e.g. fantasy.premierleague.com/entry/**2368852**/event/7")
-st.session_state.last_gameweek = int(st.text_input(label="What was the most recent gameweek? e.g. 7", value="5"))
 
 if st.session_state.team_id and st.session_state.last_gameweek:
     team_name, points, average_points, highest_points, gameweek_rank, overall_rank, team_value, transfers, transfers_cost, captain, captain_points, total_points_per_line_season = d.get_data(team_id = st.session_state.team_id, last_gameweek = st.session_state.last_gameweek)
