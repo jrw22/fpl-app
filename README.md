@@ -27,7 +27,7 @@ pip install -r requirements.txt
 The required libraries are:
 
 - `streamlit`
-- `matplotlib`
+- `plotly`
 - `numpy`
 - `pandas`
 - `urllib3`
@@ -69,7 +69,7 @@ This will start the Streamlit app locally, and you can interact with the analysi
 ## Usage
 
 1. **Fetch Data**: Data is fetched from the Fantasy Premier League API using the `get_data.py` script located in the `utils` folder.
-2. **Visualisation**: The fetched data is visualised using Matplotlib and integrated into the Streamlit app to display charts for metrics like team points, rank, transfers, and captain performance.
+2. **Visualisation**: The fetched data is visualised using plotly and integrated into the Streamlit app to display charts for metrics like team points, rank, transfers, and captain performance.
 3. **Custom Configuration**: You can configure the team ID and the number of gameweeks to analyse directly in the `streamlit_fpl_app.py` file by updating the `team_id` and `last_gameweek` variables.
 
 ## API Usage
@@ -82,6 +82,6 @@ The project uses the Fantasy Premier League API to retrieve team and player data
 - **Gameweek Rank**: Track your team’s gameweek and overall rank over the course of the season.
 - **Transfers & Transfer Costs**: View the number of transfers made and their associated cost.
 - **Captain Points**: Analyse the points scored by your selected captains.
-- **Points Distribution**: See the breakdown of points by position (GK, DEF, MID, ST).
+- **Points Distribution**: See the breakdown of points by position (GK, DEF, MID, ST) (currently removed for bug fixing).
 
 
