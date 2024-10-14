@@ -3,6 +3,8 @@
 
 This project analyses data from the Fantasy Premier League (FPL) and provides visual insights into team performance using various metrics like points, rank, team value, transfers, and captain choices over the gameweeks. The data is fetched from the official FPL API, and a Streamlit app is built to visualise these metrics interactively.
 
+Access the app here: https://fpl-fantasy-football.streamlit.app
+
 ## Features
 
 - Fetches data directly from the Fantasy Premier League API.
