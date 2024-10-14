@@ -1,120 +1,223 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
+import plotly.graph_objects as go
 
 # Local imports
-from utils import get_data as d
+from utils import get_data as fpl
 
 # Title of the app
 st.title("FPL Analysis")
 
 # Initialise session state variables
 st.session_state.team_id = ""
-st.session_state.last_gameweek = 0
+st.session_state.last_gameweek = ""
 
 # Get data - user input
-st.session_state.last_gameweek = int(st.text_input(label="What was the most recent gameweek? e.g. 7", value="5"))
 st.session_state.team_id = st.text_input(label="Enter your team ID")
 st.markdown("Your team ID is the number found in the url on the Points page of the FPL website, e.g. fantasy.premierleague.com/entry/**2368852**/event/7")
+st.session_state.last_gameweek = int(st.text_input(label="What was the most recent gameweek? e.g. 7", max_chars=2))
 
 if st.session_state.team_id and st.session_state.last_gameweek:
-    team_name, points, average_points, highest_points, gameweek_rank, overall_rank, team_value, transfers, transfers_cost, captain, captain_points, total_points_per_line_season = d.get_data(team_id = st.session_state.team_id, last_gameweek = st.session_state.last_gameweek)
+    
+    ###  Display headline stats -------------------
+    st.session_state.team_info = fpl.get_team_general_info(team_id=st.session_state.team_id)
+    # Team name
+    st.title(st.session_state.team_info['name'])
+    # First row: Team Manager and Years Active
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Team Manager", value=f"{st.session_state.team_info['player_first_name']} {st.session_state.team_info['player_last_name']}")
+    with col2:
+        st.metric(label="Years Active", value=st.session_state.team_info['years_active'])
 
+    # Second row: Overall Points and Overall Rank
+    col3, col4 = st.columns(2)
+    with col3:
+        st.metric(label="Overall Points", value=st.session_state.team_info['summary_overall_points'])
+    with col4:
+        st.metric(label="Overall Rank", value=st.session_state.team_info['summary_overall_rank'])
+
+    # Third row: Gameweek Points and Rank
+    col5, col6 = st.columns(2)
+    with col5:
+        st.metric(label=f"GW{st.session_state.last_gameweek} Points", value=st.session_state.team_info['summary_event_points'])
+    with col6:
+        st.metric(label=f"GW{st.session_state.last_gameweek} Rank", value=st.session_state.team_info['summary_event_rank'])
+
+    team_name, points, average_points, highest_points, gameweek_rank, overall_rank, team_value, transfers, transfers_cost, captain, captain_points, total_points_per_line_season = fpl.get_data(team_id = st.session_state.team_id, last_gameweek = st.session_state.last_gameweek)
+
+    ###  Display plots -------------------
+
+    ## GAMEWEEK POINTS
     gameweek = np.arange(1, st.session_state.last_gameweek+1)
+    fig = go.Figure()
+    # Team FPL points
+    fig.add_trace(go.Scatter(
+        x=gameweek, 
+        y=points, 
+        mode='lines+markers',
+        name='Team FPL points',
+        line=dict(color='blue'),
+        marker=dict(size=8)
+    ))
+    # Average FPL points
+    fig.add_trace(go.Scatter(
+        x=gameweek, 
+        y=average_points, 
+        mode='lines+markers',
+        name='Average FPL points',
+        line=dict(color='black'),
+        marker=dict(size=8)
+    ))
+    # Highest FPL points
+    fig.add_trace(go.Scatter(
+        x=gameweek, 
+        y=highest_points, 
+        mode='lines+markers',
+        name='Highest FPL points',
+        line=dict(color='red'),
+        marker=dict(size=8)
+    ))
+    # Update layout
+    fig.update_layout(
+        title=f"Team Performance",
+        xaxis_title="Gameweek",
+        yaxis_title="FPL Points",
+        legend_title="Metrics",
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+        ),
+        width=800,  # Adjust width if needed
+        height=500  # Adjust height if needed
+    )
+    st.plotly_chart(fig)
 
-    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(11.69, 10)) #fig size A4 in inches figsize=(11.69,8.27)
-    fig.suptitle("Team performance : " + team_name)
-    fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.3, hspace=0.4)
-
-    ### Team points
-    ax1.plot(gameweek, points, color='b', label='Team FPL points')
-    ax1.plot(gameweek, average_points, color='black', label='Average FPL points')
-    ax1.plot(gameweek, highest_points, color='r', label='Highest FPL points')
-    ax1.set_xlabel('Gameweek')
-    ax1.set_ylabel('FPL points')
-    ax1.legend(loc='best', frameon=True, prop={'size':6})
-
-    ### Team rank
+    ## GAMEWEEK RANK
     gameweekRank = np.array(gameweek_rank)
-    ax2.bar(gameweek, gameweekRank, color='b', label='GW Rank', width=0.5)
-    ax2.plot(gameweek, overall_rank, color='r', label='Overall rank')
-    ax2.set_ylim(ymin=0)
-    ax2.set_ylim(ymax=max(gameweekRank + 400000))
-    ax2.get_yaxis().get_major_formatter().set_scientific(False)
-    ax2.set_xlabel('Gameweek')
-    ax2.set_ylabel('Rank')
-    ax2.legend(loc='best', frameon=True, prop={'size':6})
-    rects = ax2.patches
-    for rect in rects:
-        height = rect.get_height()
-        ax2.text(rect.get_x() + rect.get_width() / 2, height + 100000, height, ha='center', va='bottom', size=6)
+    fig_rank = go.Figure()
+    # GW Rank (Bar chart)
+    fig_rank.add_trace(go.Bar(
+        x=gameweek,
+        y=gameweekRank,
+        name="GW Rank",
+        marker_color='blue'
+    ))
+    # Overall Rank (Line chart)
+    fig_rank.add_trace(go.Scatter(
+        x=gameweek,
+        y=overall_rank,
+        mode='lines+markers',
+        name="Overall Rank",
+        line=dict(color='red'),
+        marker=dict(size=8)
+    ))
+    # Update layout
+    fig_rank.update_layout(
+        title="Team Rank",
+        xaxis_title="Gameweek",
+        yaxis_title="Rank",
+        yaxis_range=[0, max(gameweekRank) + 400000],  # Adjust range based on data
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        barmode='overlay',  # To overlay bar and line
+    )
+    st.plotly_chart(fig_rank)
 
-    ### Team value
-    ax3.bar(gameweek, list(map(lambda x: x/10, team_value)), width=0.5, color='b')
-    ax3.set_ylim(ymin=min(list(map(lambda x: x/10, team_value)))-0.5)
-    ax3.set_ylim(ymax=max(list(map(lambda x: x/10, team_value)))+0.5)
-    ax3.set_xlabel('Gameweek')
-    ax3.set_ylabel('Team Value (incl. bank)')
-    rects = ax3.patches
-    labels = [sum(x) for x in zip(list(map(lambda x: round(x/10, 1), team_value)))]
-    for rect, label in zip(rects, labels):
-        height = rect.get_height()
-        ax3.text(rect.get_x() + rect.get_width() / 2, height + 0.1, label, ha='center', va='bottom', size=6)
+    ## TEAM VALUE
+    team_value_normalised = list(map(lambda x: x / 10, team_value))
+    fig_value = go.Figure()
+    # Team Value (Bar chart)
+    fig_value.add_trace(go.Bar(
+        x=gameweek,
+        y=team_value_normalised,
+        name="Team Value",
+        marker_color='blue'
+    ))
+    # Update layout
+    fig_value.update_layout(
+        title="Team Value (incl. bank)",
+        xaxis_title="Gameweek",
+        yaxis_title="Team Value (in million)",
+        yaxis_range=[min(team_value_normalised) - 0.5, max(team_value_normalised) + 0.5],
+        showlegend=False
+    )
+    st.plotly_chart(fig_value)
 
-    ### Team transfers
-    ax44 = ax4.twinx()
-    ax4.bar(gameweek, transfers, color='b', label='Number of transfers', width=0.5)
-    ax44.plot(gameweek, transfers_cost, color='r', label='Transfers cost')
-    ax4.set_xlabel('Gameweek')
-    ax4.set_ylabel('Number of transfers')
-    ax44.set_ylabel('Transfers cost')
-    ax4.legend(loc=2, frameon=True, prop={'size':6})
-    ax44.legend(loc=1, frameon=True, prop={'size':6})
-    ax44.set_ylim(ymin=0)
-    ax44.set_ylim(ymax=max(transfers_cost)+1)
-    ax4.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    ax44.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    ## TEAM TRANSFERS
+    fig_transfers = go.Figure()
+    # Number of Transfers (Bar chart)
+    fig_transfers.add_trace(go.Bar(
+        x=gameweek,
+        y=transfers,
+        name="Number of Transfers",
+        marker_color='blue'
+    ))
+    # Transfers Cost (Line chart)
+    fig_transfers.add_trace(go.Scatter(
+        x=gameweek,
+        y=transfers_cost,
+        mode='lines+markers',
+        name="Transfers Cost",
+        line=dict(color='red'),
+        marker=dict(size=8)
+    ))
+    # Update layout
+    fig_transfers.update_layout(
+        title="Transfers and Transfer Cost",
+        xaxis_title="Gameweek",
+        yaxis_title="Number of Transfers",
+        yaxis2=dict(
+            title="Transfer Cost",
+            overlaying="y",  # Overlay the second y-axis
+            side="right",
+            range=[0, max(transfers_cost) + 1]
+        ),
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        barmode='overlay'  # Overlay bars and lines
+    )
+    st.plotly_chart(fig_transfers)
 
-    ### Captain points
+    ## CAPTAIN POINTS
     captain_points = np.array(captain_points)
-    captain_display = []
-    for n in range(0, st.session_state.last_gameweek):
-        captain_display.append(str(n+1) + " - " + captain[n])
+    # Create captain display labels
+    captain_display = [f"{n+1} - {captain[n]}" for n in range(st.session_state.last_gameweek)]
+    # Mask for Captain Points > 3
     mask1 = captain_points > 3
+    # Mask for Captain Points <= 3
     mask2 = captain_points <= 3
-    ax5.bar(gameweek[mask1], list(map(lambda x: x*2, captain_points[mask1])), width=0.5, color='green')
-    ax5.bar(gameweek[mask2], list(map(lambda x: x*2, captain_points[mask2])), width=0.5, color='firebrick')
-    ax5.set_ylim(ymin=0)
-    ax5.set_ylim(ymax=max(list(map(lambda x: x*2, captain_points)))+5)
-    ax5.set_xticks(gameweek)
-    ax5.set_xticklabels(captain_display, rotation=90, ha="right", size=6)
-    ax5.set_ylabel('Captain FPL points')
-    rects = ax5.patches
-    for rect in rects:
-        height = rect.get_height()
-        ax5.text(rect.get_x() + rect.get_width() / 2, height + 0.6, height, ha='center', va='bottom', size=6)
-
-    # ### Points per position
-    # positions = list(total_points_per_line_season.keys())
-    # points_pos = list(total_points_per_line_season.values())
-    # colors = ['#f1d18a', '#73b1c1', '#588d9c', '#36626a']
-
-    # def func(pct, allvals):
-    #     absolute = int(pct/100.*np.sum(allvals))
-    #     return "{:.1f}%\n({:d} pts)".format(pct, absolute)
-
-    # wedges, texts, autotexts = ax6.pie(points_pos, autopct=lambda pct: func(pct, points_pos),
-    #                                 textprops=dict(color="k"), colors=colors)
-
-    # ax6.legend(wedges, positions,
-    #         title="Positions",
-    #         loc="center left",
-    #         bbox_to_anchor=(0.92, 0, 0.5, 1))
-
-    # ax6.set_xlabel("Points per position over the season")
-
-    st.pyplot(fig)
+    # Masks for colouring
+    captain_points_filtered_mask1 = [captain_points[i] * 2 for i in range(len(captain_points)) if mask1[i]]
+    captain_points_filtered_mask2 = [captain_points[i] * 2 for i in range(len(captain_points)) if mask2[i]]
+    fig_captain = go.Figure()
+    # Bar chart for Captain Points > 3 (Green)
+    fig_captain.add_trace(go.Bar(
+        x=gameweek[mask1],
+        y=captain_points_filtered_mask1,
+        name="Captain Points > 3",
+        marker_color='green'
+    ))
+    # Bar chart for Captain Points <= 3 (Red)
+    fig_captain.add_trace(go.Bar(
+        x=gameweek[mask2],
+        y=captain_points_filtered_mask2,
+        name="Captain Points <= 3",
+        marker_color='firebrick'
+    ))
+    # Update layout
+    fig_captain.update_layout(
+        title="Captain FPL Points",
+        xaxis_title="Gameweek",
+        yaxis_title="Captain Points",
+        yaxis_range=[0, max(captain_points) * 2 + 5],
+        xaxis=dict(
+            tickvals=gameweek,
+            ticktext=captain_display,
+            tickangle=90
+        ),
+        showlegend=True
+    )
 
 else:
-    st.info("Enter your team ID and the most recent GW to get started!")
+    st.info("⚽ Enter your team ID and the most recent GW to get started!")
