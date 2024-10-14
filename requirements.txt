@@ -1,6 +1,6 @@
 
 streamlit
-matplotlib
+plotly
 numpy
 pandas
 urllib3
